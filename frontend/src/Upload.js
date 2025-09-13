@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom"; 
 import "./Upload.css";
 
@@ -16,8 +16,43 @@ function Upload() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [textColor, setTextColor] = useState("white");
+  const [selectedSocial, setSelectedSocial] = useState(""); // social ที่เลือก
+  const [socialName, setSocialName] = useState(""); // ชื่อ social
 
   const MAX_TEXT_LENGTH = 36;
+
+  // โหลดข้อมูลจาก localStorage ตอน mount
+  useEffect(() => {
+    const saved = localStorage.getItem("uploadFormDraft");
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (data) {
+          setText(data.text || "");
+          setTextColor(data.textColor || "white");
+          setSelectedSocial(data.selectedSocial || "");
+          setSocialName(data.socialName || "");
+          // *** ไม่ต้อง setImage(data.image) ***
+        }
+      } catch {}
+    }
+  }, []);
+
+  // Save ข้อมูลทุกครั้งที่ state เปลี่ยน
+  useEffect(() => {
+    // image ไม่สามารถเก็บไฟล์ใน localStorage ได้โดยตรง
+    // ให้เก็บแค่ชื่อไฟล์ หรือ base64 (ถ้าต้องการ)
+    localStorage.setItem(
+      "uploadFormDraft",
+      JSON.stringify({
+        text,
+        textColor,
+        selectedSocial,
+        socialName,
+        // image: image ? image.name : null // หรือไม่ต้องเก็บ image
+      })
+    );
+  }, [text, textColor, selectedSocial, socialName]);
 
   const handleTextChange = (e) => {
     const inputText = e.target.value;
@@ -29,18 +64,44 @@ function Upload() {
     }
   };
 
+  // ถ้าอยากเก็บรูปด้วย ต้องแปลงเป็น base64
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // ตรวจสอบขนาดไฟล์ (5MB)
       if (file.size > 5 * 1024 * 1024) {
         setAlertMessage("ขนาดไฟล์ต้องไม่เกิน 5MB");
         return;
       }
       setImage(file);
       setAlertMessage("");
+      // เก็บ base64 ลง localStorage
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        localStorage.setItem("uploadFormImage", ev.target.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
+
+  // โหลดรูปจาก localStorage (base64) ตอน mount
+  useEffect(() => {
+    const saved = localStorage.getItem("uploadFormImage");
+    if (saved) {
+      // สร้างไฟล์จำลองจาก base64
+      const arr = saved.split(",");
+      if (arr.length > 1) {
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const file = new File([u8arr], "image.png", { type: mime });
+        setImage(file); // ลบ fileInput ที่ไม่ได้ใช้
+      }
+    }
+  }, []);
 
   const handleUpload = () => {
     if (type === "image" && !image) {
@@ -56,49 +117,112 @@ function Upload() {
     setShowPreviewModal(true);
   };
 
+
+
+  // สร้างข้อความ socialText และ socialOnImage ใหม่
+  const socialText = selectedSocial && socialName
+    ? (() => {
+        switch (selectedSocial) {
+          case "ig": return `IG: ${socialName}`;
+          case "fb": return `Facebook: ${socialName}`;
+          case "line": return `Line: ${socialName}`;
+          case "tiktok": return `Tiktok: ${socialName}`;
+          default: return "";
+        }
+      })()
+    : "";
+
+  const socialOnImage = selectedSocial && socialName
+    ? (() => {
+        switch (selectedSocial) {
+          case "ig":
+            return (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <rect x="2" y="2" width="20" height="20" rx="5" fill="#E1306C"/>
+                  <circle cx="12" cy="12" r="5" fill="#fff"/>
+                  <circle cx="18" cy="6" r="1.5" fill="#fff"/>
+                </svg>
+                {socialName}
+              </span>
+            );
+          case "fb":
+            return (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F3">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                {socialName}
+              </span>
+            );
+          case "line":
+            return (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#06C755">
+                  <rect x="2" y="2" width="20" height="20" rx="5"/>
+                  <text x="12" y="16" textAnchor="middle" fontSize="10" fill="#fff" fontFamily="Arial">LINE</text>
+                </svg>
+                {socialName}
+              </span>
+            );
+          case "tiktok":
+            return (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#000">
+                  <path d="M9.5 3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1.5a5.5 5.5 0 0 0 5.5 5.5h1.5a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1.5A5.5 5.5 0 0 0 14.5 19.5V21a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-1.5A5.5 5.5 0 0 0 3 14.5V13a1 1 0 0 1 1-1h1.5A5.5 5.5 0 0 0 9.5 4.5V3z"/>
+                </svg>
+                {socialName}
+              </span>
+            );
+          default:
+            return null;
+        }
+      })()
+    : null;
+
   const handleAccept = async () => {
-    const formData = new FormData();
-    formData.append("text", text);
-    formData.append("type", type);
-    formData.append("time", time);
-    formData.append("price", price);
-    formData.append("textColor", textColor);
-
     if (type === "image" && image) {
-      formData.append("file", image);
-    }
+      generateFinalImage(image, text, textColor, selectedSocial, socialName, async (finalBlob) => {
+        const formData = new FormData();
+        formData.append("file", finalBlob, "final.png");
+        formData.append("type", type);
+        formData.append("time", time);
+        formData.append("price", price);
+        formData.append("textColor", textColor);
 
-    let sender = "Unknown";
-    const user = localStorage.getItem("user");
-    if (user) {
-      try {
-        const userObj = JSON.parse(user);
-        sender = userObj.name || userObj.username || "Unknown";
-      } catch {
-        sender = "Unknown";
-      }
-    }
-    formData.append("sender", sender);
+        let sender = "Unknown";
+        const user = localStorage.getItem("user");
+        if (user) {
+          try {
+            const userObj = JSON.parse(user);
+            sender = userObj.name || userObj.username || "Unknown";
+          } catch {
+            sender = "Unknown";
+          }
+        }
+        formData.append("sender", sender);
 
-    try {
-      const response = await fetch("http://localhost:4000/api/upload", {
-        method: "POST",
-        body: formData,
+        try {
+          const response = await fetch("http://localhost:4000/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            localStorage.setItem('pendingUploadId', result.uploadId);
+            setShowPreviewModal(false);
+            navigate(`/payment?uploadId=${result.uploadId}&price=${price}&type=${type}&time=${time}`);
+          } else {
+            throw new Error('Failed to upload');
+          }
+        } catch (error) {
+          console.error('Error uploading:', error);
+          setAlertMessage("เกิดข้อผิดพลาดในการอัปโหลด กรุณาลองใหม่");
+        }
       });
-      
-      if (response.ok) {
-        const result = await response.json();
-        // ใช้ uploadId โดยตรงโดยไม่เก็บใน state
-        localStorage.setItem('pendingUploadId', result.uploadId);
-        
-        setShowPreviewModal(false);
-        navigate(`/payment?uploadId=${result.uploadId}&price=${price}&type=${type}&time=${time}`);
-      } else {
-        throw new Error('Failed to upload');
-      }
-    } catch (error) {
-      console.error('Error uploading:', error);
-      setAlertMessage("เกิดข้อผิดพลาดในการอัปโหลด กรุณาลองใหม่");
+    } else {
+      // ...กรณี type === "text" ส่งแบบเดิม...
     }
   };
 
@@ -112,6 +236,49 @@ function Upload() {
   const handleGoBack = () => {
     navigate(-1);
   };
+
+  // เพิ่มฟังก์ชันนี้ใน Upload.js
+  function generateFinalImage(imageFile, text, textColor, socialType, socialName, callback) {
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+
+      // วาด Social (กลางภาพ)
+      if (socialType && socialName) {
+        ctx.font = "bold 32px Prompt, Kanit, sans-serif";
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "center";
+        ctx.shadowColor = "#000";
+        ctx.shadowBlur = 6;
+        ctx.fillText(
+          `${socialType.toUpperCase()}: ${socialName}`,
+          canvas.width / 2,
+          canvas.height / 2 - 20
+        );
+        ctx.shadowBlur = 0;
+      }
+
+      // วาดข้อความ (กลางภาพ)
+      if (text) {
+        ctx.font = "bold 36px Prompt, Kanit, sans-serif";
+        ctx.fillStyle = textColor || "#fff";
+        ctx.textAlign = "center";
+        ctx.shadowColor = textColor === "white" ? "#000" : "#fff";
+        ctx.shadowBlur = 8;
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2 + 30);
+        ctx.shadowBlur = 0;
+      }
+
+      canvas.toBlob((blob) => {
+        callback(blob);
+      }, "image/png");
+    };
+    img.src = URL.createObjectURL(imageFile);
+  }
 
   return (
     <div className="upload-container">
@@ -177,19 +344,151 @@ function Upload() {
                 </div>
 
                 {image && (
-                  <div className="image-preview-container">
+                  <div className="image-preview-container" style={{ position: "relative" }}>
                     <img src={URL.createObjectURL(image)} alt="Preview" className="preview-image" />
                     <div
-                      className="preview-text-overlay"
-                      style={{ 
-                        color: textColor, 
-                        textShadow: textColor === "white" ? "0 2px 8px rgba(0,0,0,0.8)" : "0 2px 8px rgba(255,255,255,0.8)"
+                      className="preview-overlay-center"
+                      style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        width: "90%",
+                        zIndex: 2,
+                        textAlign: "center",
+                        pointerEvents: "none"
                       }}
                     >
-                      {text}
+                      {socialOnImage && (
+                        <div className="preview-social-overlay" style={{
+                          marginBottom: "8px",
+                          color: "#fff",
+                          padding: "6px 16px",
+                          borderRadius: "8px",
+                          fontWeight: "bold",
+                          fontSize: "16px",
+                          maxWidth: "100%",
+                          wordBreak: "break-all"
+                        }}>
+                          {socialOnImage}
+                        </div>
+                      )}
+                      <div
+                        className="preview-text-overlay"
+                        style={{
+                          color: textColor,
+                          borderRadius: "8px",
+                          padding: "6px 16px",
+                          fontWeight: "bold",
+                          fontSize: "18px",
+                          textShadow: textColor === "white"
+                            ? "0 2px 8px rgba(0,0,0,0.8)"
+                            : "0 2px 8px rgba(255,255,255,0.8)",
+                          maxWidth: "100%",
+                          wordBreak: "break-all"
+                        }}
+                      >
+                        {text}
+                      </div>
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Social Section */}
+            <div className="social-section">
+              <h3>ช่องทางโซเชียลของคุณ</h3>
+              <div className="social-radio-options">
+                <label className={`social-radio ${selectedSocial === "ig" ? "selected" : ""}`}>
+                  <input
+                    type="radio"
+                    name="social"
+                    value="ig"
+                    checked={selectedSocial === "ig"}
+                    onChange={() => { setSelectedSocial("ig"); setSocialName(""); }}
+                  />
+                  <span className="icon-label">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <rect x="2" y="2" width="20" height="20" rx="5" fill="#E1306C"/>
+                      <circle cx="12" cy="12" r="5" fill="#fff"/>
+                      <circle cx="18" cy="6" r="1.5" fill="#fff"/>
+                    </svg>
+                    IG
+                  </span>
+                </label>
+                <label className={`social-radio ${selectedSocial === "fb" ? "selected" : ""}`}>
+                  <input
+                    type="radio"
+                    name="social"
+                    value="fb"
+                    checked={selectedSocial === "fb"}
+                    onChange={() => { setSelectedSocial("fb"); setSocialName(""); }}
+                  />
+                  <span className="icon-label">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F3">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                    Facebook
+                  </span>
+                </label>
+                <label className={`social-radio ${selectedSocial === "line" ? "selected" : ""}`}>
+                  <input
+                    type="radio"
+                    name="social"
+                    value="line"
+                    checked={selectedSocial === "line"}
+                    onChange={() => { setSelectedSocial("line"); setSocialName(""); }}
+                  />
+                  <span className="icon-label">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#06C755">
+                      <rect x="2" y="2" width="20" height="20" rx="5"/>
+                      <text x="12" y="16" textAnchor="middle" fontSize="10" fill="#fff" fontFamily="Arial">LINE</text>
+                    </svg>
+                    Line
+                  </span>
+                </label>
+                <label className={`social-radio ${selectedSocial === "tiktok" ? "selected" : ""}`}>
+                  <input
+                    type="radio"
+                    name="social"
+                    value="tiktok"
+                    checked={selectedSocial === "tiktok"}
+                    onChange={() => { setSelectedSocial("tiktok"); setSocialName(""); }}
+                  />
+                  <span className="icon-label">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#000">
+                      <path d="M9.5 3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1.5a5.5 5.5 0 0 0 5.5 5.5h1.5a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1.5A5.5 5.5 0 0 0 14.5 19.5V21a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-1.5A5.5 5.5 0 0 0 3 14.5V13a1 1 0 0 1 1-1h1.5A5.5 5.5 0 0 0 9.5 4.5V3z"/>
+                    </svg>
+                    Tiktok
+                  </span>
+                </label>
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <input
+                  type="text"
+                  className="social-input"
+                  placeholder={
+                    selectedSocial === "ig" ? "ชื่อ IG" :
+                    selectedSocial === "fb" ? "ชื่อ Facebook" :
+                    selectedSocial === "line" ? "ชื่อ Line" :
+                    selectedSocial === "tiktok" ? "ชื่อ Tiktok" : "ชื่อช่องทาง"
+                  }
+                  maxLength={32}
+                  value={socialName}
+                  onChange={e => setSocialName(e.target.value)}
+                  disabled={!selectedSocial}
+                />
+              </div>
+            </div>
+
+            {/* แสดงข้อความ socialText ด้านบน textarea */}
+            {socialText && (
+              <div className="social-preview-text">
+                {socialText}
               </div>
             )}
 
@@ -317,21 +616,76 @@ function Upload() {
               <div className="modal-body">
                 <div className="preview-container">
                   {type === "image" && image && (
-                    <div className="final-preview">
-                      <img src={URL.createObjectURL(image)} alt="Preview" />
+                    <div className="final-preview" style={{ position: "relative" }}>
+                      <img src={URL.createObjectURL(image)} alt="Preview" className="preview-image" />
                       <div
-                        className="final-text-overlay"
-                        style={{ 
-                          color: textColor, 
-                          textShadow: textColor === "white" ? "0 2px 8px rgba(0,0,0,0.8)" : "0 2px 8px rgba(255,255,255,0.8)"
+                        className="preview-overlay-center"
+                        style={{
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          transform: "translate(-50%, -50%)",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          width: "90%",
+                          zIndex: 2,
+                          textAlign: "center",
+                          pointerEvents: "none"
                         }}
                       >
-                        {text}
+                        {socialOnImage && (
+                          <div className="preview-social-overlay" style={{
+                            marginBottom: "8px",
+                            color: "#fff",
+                            padding: "6px 16px",
+                            borderRadius: "8px",
+                            fontWeight: "bold",
+                            fontSize: "16px",
+                            maxWidth: "100%",
+                            wordBreak: "break-all"
+                          }}>
+                            {socialOnImage}
+                          </div>
+                        )}
+                        <div
+                          className="preview-text-overlay"
+                          style={{
+                            color: textColor,
+                            borderRadius: "8px",
+                            padding: "6px 16px",
+                            fontWeight: "bold",
+                            fontSize: "18px",
+                            textShadow: textColor === "white"
+                              ? "0 2px 8px rgba(0,0,0,0.8)"
+                              : "0 2px 8px rgba(255,255,255,0.8)",
+                            maxWidth: "100%",
+                            wordBreak: "break-all"
+                          }}
+                        >
+                          {text}
+                        </div>
                       </div>
                     </div>
                   )}
                   {type === "text" && (
                     <div className="text-only-preview">
+                      {/* สำหรับ text-only สามารถแสดง socialOnImage ได้เช่นกัน */}
+                      {socialOnImage && (
+                        <div className="preview-social-overlay" style={{
+                          margin: "8px 0",
+                          color: "#fff",
+                          padding: "6px 16px",
+                          borderRadius: "8px",
+                          fontWeight: "bold",
+                          fontSize: "16px",
+                          maxWidth: "100%",
+                          wordBreak: "break-all",
+                          background: "rgba(0,0,0,0.5)"
+                        }}>
+                          {socialOnImage}
+                        </div>
+                      )}
                       <p style={{ color: textColor }}>{text}</p>
                     </div>
                   )}

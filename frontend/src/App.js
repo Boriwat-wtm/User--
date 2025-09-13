@@ -5,6 +5,7 @@ import Select from "./Select";
 import Upload from "./Upload";
 import Status from "./Status";
 import Payment from "./Payment";
+import Profile from "./Profile";
 import Report from "./Report";
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
         <Route path="/status" element={<Status />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/report" element={<Report />} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
     </BrowserRouter>
   );

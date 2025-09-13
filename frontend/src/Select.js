@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { io } from "socket.io-client";
 import "./Select.css";
 
 function Select() {
@@ -14,6 +15,21 @@ function Select() {
   const [alertMessage, setAlertMessage] = useState("");
   const [showRestrictions, setShowRestrictions] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [packages, setPackages] = useState([]);
+
+  useEffect(() => {
+    const socket = io("http://localhost:4005");
+    socket.on("status", (data) => {
+      // filter เฉพาะแพ็คเกจที่ตรงกับ type ที่เลือก
+      if (data.settings) {
+        const filtered = data.settings.filter(pkg => pkg.mode === type);
+        setPackages(filtered);
+      }
+    });
+    // ขอข้อมูลล่าสุด
+    socket.emit("getConfig");
+    return () => socket.disconnect();
+  }, [type]);
 
   const handleSelect = (time, price, index) => {
     setTime(time);
@@ -45,13 +61,6 @@ function Select() {
   const handleGoBack = () => {
     navigate(-1);
   };
-
-  const packages = [
-    { time: "1", price: "1", minutes: 1, popular: false },
-    { time: "2", price: "2", minutes: 2, popular: true },
-    { time: "3", price: "3", minutes: 3, popular: false },
-    { time: "4", price: "4", minutes: 4, popular: false }
-  ];
 
   return (
     <div className="select-container">
@@ -106,73 +115,66 @@ function Select() {
           <div className="packages-section">
             <h3>เลือกแพ็กเกจเวลา</h3>
             <div className="packages-grid">
-              {packages.map((pkg, index) => (
-                <div
-                  key={index}
-                  className={`package-card ${selectedOption === index ? "selected" : ""} ${pkg.popular ? "popular" : ""}`}
-                  onClick={() => handleSelect(pkg.time, pkg.price, index)}
-                >
-                  {pkg.popular && (
-                    <div className="popular-badge">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-                      </svg>
-                      ยอดนิยม
-                    </div>
-                  )}
-                  
-                  <div className="package-header">
-                    <div className="package-icon">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12,6 12,12 16,14"/>
-                      </svg>
-                    </div>
-                    <h4>{pkg.minutes} นาที</h4>
-                  </div>
-
-                  <div className="package-content">
-                    <div className="price-display">
-                      <span className="price-amount">฿{pkg.price}</span>
-                      <span className="price-unit">/ นาที</span>
-                    </div>
-                    
-                    <div className="package-features">
-                      <div className="feature-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M20 6L9 17l-5-5"/>
+              {packages.length === 0 ? (
+                <div style={{ textAlign: "center", color: "#888", fontSize: "1.2rem", marginTop: "32px" }}>
+                  ไม่มีแพ็คเกจสำหรับประเภทนี้
+                </div>
+              ) : (
+                packages.map((pkg, index) => (
+                  <div
+                    key={pkg.id}
+                    className={`package-card ${selectedOption === index ? "selected" : ""}`}
+                    onClick={() => handleSelect(pkg.duration, pkg.price, index)}
+                  >
+                    <div className="package-header">
+                      <div className="package-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10"/>
+                          <polyline points="12,6 12,12 16,14"/>
                         </svg>
-                        <span>แสดงผล {pkg.minutes} นาที</span>
                       </div>
-                      <div className="feature-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M20 6L9 17l-5-5"/>
-                        </svg>
-                        <span>คุณภาพ HD</span>
+                      <h4>{pkg.duration}</h4>
+                    </div>
+                    <div className="package-content">
+                      <div className="price-display">
+                        <span className="price-amount">฿{pkg.price}</span>
                       </div>
-                      {type === "image" && (
+                      <div className="package-features">
                         <div className="feature-item">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M20 6L9 17l-5-5"/>
                           </svg>
-                          <span>รูปภาพ + ข้อความ</span>
+                          <span>แสดงผล {pkg.duration}</span>
+                        </div>
+                        <div className="feature-item">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M20 6L9 17l-5-5"/>
+                          </svg>
+                          <span>คุณภาพ HD</span>
+                        </div>
+                        {type === "image" && (
+                          <div className="feature-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M20 6L9 17l-5-5"/>
+                            </svg>
+                            <span>รูปภาพ + ข้อความ</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="package-footer">
+                      {selectedOption === index && (
+                        <div className="selected-indicator">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M20 6L9 17l-5-5"/>
+                          </svg>
+                          <span>เลือกแล้ว</span>
                         </div>
                       )}
                     </div>
                   </div>
-
-                  <div className="package-footer">
-                    {selectedOption === index && (
-                      <div className="selected-indicator">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M20 6L9 17l-5-5"/>
-                        </svg>
-                        <span>เลือกแล้ว</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 

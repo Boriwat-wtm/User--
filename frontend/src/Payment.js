@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+// import axios from "axios"; // ลบออกถ้าไม่ได้ใช้
 import "./Payment.css";
 import promptpayLogo from "./data-icon/promptpay-logo.png";
-import truemoneyLogo from "./data-icon/truemoney-logo.png";
 import paymentLogo from "./data-icon/payment-logo.jpg";
 import { incrementQueueNumber } from "./utils";
 import SlipUpload from "./SlipUpload";
@@ -18,10 +17,8 @@ function Payment() {
 
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
+  // const [phone, setPhone] = useState(""); // ลบออกถ้าไม่ได้ใช้
+  // const [otp, setOtp] = useState("");     // ลบออกถ้าไม่ได้ใช้
   const [errorMessage, setErrorMessage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -93,50 +90,7 @@ function Payment() {
 
   const closePopup = () => {
     setShowPopup(false);
-    setOtpSent(false);
-    setOtpVerified(false);
-    setOtp("");
-    setPhone("");
     setErrorMessage("");
-  };
-
-  const sendOtp = async () => {
-    if (!phone || phone.length !== 10 || !/^\d+$/.test(phone)) {
-      setErrorMessage("กรุณากรอกหมายเลขโทรศัพท์ที่ถูกต้อง (10 หลัก)");
-      return;
-    }
-
-    try {
-      const response = await axios.post("http://localhost:5000/send-otp", { phone });
-      if (response.data.success) {
-        setOtpSent(true);
-        setErrorMessage("");
-        setErrorMessage("📱 OTP ถูกส่งไปยังหมายเลขโทรศัพท์ของคุณแล้ว");
-      } else {
-        setErrorMessage(response.data.message || "ไม่สามารถส่ง OTP ได้");
-      }
-    } catch (error) {
-      console.error("Error sending OTP:", error.response || error.message);
-      setErrorMessage("❌ ไม่สามารถส่ง OTP ได้ กรุณาลองใหม่อีกครั้ง");
-    }
-  };
-
-  const verifyOtp = async () => {
-    if (!otp || otp.length !== 6) {
-      setErrorMessage("กรุณากรอก OTP 6 หลัก");
-      return;
-    }
-
-    try {
-      const response = await axios.post("http://localhost:5000/verify-otp", { phone, otp });
-      if (response.data.success) {
-        setOtpVerified(true);
-        setErrorMessage("✅ OTP ยืนยันสำเร็จ!");
-      }
-    } catch (error) {
-      console.error("Error verifying OTP:", error.response || error.message);
-      setErrorMessage("❌ OTP ไม่ถูกต้อง กรุณาลองใหม่");
-    }
   };
 
   const handleGoBack = () => {
@@ -213,26 +167,7 @@ function Payment() {
                     )}
                   </div>
                 </div>
-
-                <div
-                  className={`payment-method ${paymentMethod === "truemoney" ? "selected" : ""}`}
-                  onClick={() => setPaymentMethod("truemoney")}
-                >
-                  <div className="method-icon">
-                    <img src={truemoneyLogo} alt="TrueMoney" />
-                  </div>
-                  <div className="method-info">
-                    <h4>TrueMoney</h4>
-                    <p>ชำระผ่าน Wallet</p>
-                  </div>
-                  <div className="method-check">
-                    {paymentMethod === "truemoney" && (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 6L9 17l-5-5"/>
-                      </svg>
-                    )}
-                  </div>
-                </div>
+                {/* ลบปุ่ม TrueMoney ออก */}
               </div>
             </div>
 
@@ -306,97 +241,17 @@ function Payment() {
                     <span className="amount-value">฿{price}</span>
                   </div>
                 </div>
-                
                 <div className="payment-steps">
                   <h4>ขั้นตอนการชำระเงิน</h4>
                   <ol>
-                    <li>เปิดแอปธนาคารหรือแอป PromptPay</li>
-                    <li>เลือก "สแกน QR" หรือ "PromptPay"</li>
+                    <li>เปิดแอปธนาคาร</li>
+                    <li>เลือก "สแกน QR"</li>
                     <li>สแกน QR Code ข้างต้น</li>
                     <li>ยืนยันยอดเงินและชำระ</li>
                     <li>อัปโหลดสลิปเพื่อยืนยัน</li>
                   </ol>
                 </div>
-
                 <SlipUpload price={price} onSuccess={handleConfirmPayment} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TrueMoney Popup */}
-        {showPopup && paymentMethod === "truemoney" && (
-          <div className="modal-overlay" onClick={closePopup}>
-            <div className="modal-content payment-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3>ชำระเงินผ่าน TrueMoney</h3>
-                <button className="close-button" onClick={closePopup}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
-              </div>
-              <div className="modal-body">
-                <div className="truemoney-form">
-                  <div className="form-group">
-                    <label>หมายเลขโทรศัพท์</label>
-                    <input
-                      type="tel"
-                      placeholder="0XX-XXX-XXXX"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      maxLength="10"
-                      className="phone-input"
-                    />
-                    <button 
-                      className="otp-btn" 
-                      onClick={sendOtp} 
-                      disabled={otpSent || !phone}
-                    >
-                      {otpSent ? "OTP ถูกส่งแล้ว" : "ส่ง OTP"}
-                    </button>
-                  </div>
-
-                  {otpSent && (
-                    <div className="form-group">
-                      <label>รหัส OTP</label>
-                      <input
-                        type="text"
-                        placeholder="XXXXXX"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
-                        maxLength="6"
-                        className="otp-input"
-                      />
-                      <button 
-                        className="verify-btn" 
-                        onClick={verifyOtp}
-                        disabled={!otp}
-                      >
-                        ยืนยัน OTP
-                      </button>
-                    </div>
-                  )}
-
-                  {otpVerified && (
-                    <div className="payment-confirm">
-                      <div className="success-check">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M20 6L9 17l-5-5"/>
-                        </svg>
-                      </div>
-                      <p>OTP ยืนยันสำเร็จ!</p>
-                      <button 
-                        className="final-confirm-btn" 
-                        onClick={handleConfirmPayment}
-                        disabled={isProcessing}
-                      >
-                        {isProcessing ? "กำลังประมวลผล..." : `ยืนยันการชำระ ฿${price}`}
-                      </button>
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </div>
@@ -407,3 +262,7 @@ function Payment() {
 }
 
 export default Payment;
+
+// หลังชำระเงินสำเร็จ
+localStorage.removeItem("uploadFormDraft");
+localStorage.removeItem("uploadFormImage");
