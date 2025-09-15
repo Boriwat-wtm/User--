@@ -21,60 +21,34 @@ function Payment() {
   // const [otp, setOtp] = useState("");     // ลบออกถ้าไม่ได้ใช้
   const [errorMessage, setErrorMessage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // เพิ่ม
+
+  console.log("[Payment render] showSuccessModal =", showSuccessModal);
 
   const handleConfirmPayment = async () => {
+    if (isProcessing) return;
     setIsProcessing(true);
+    setErrorMessage("");
     try {
-      const pendingUploadId = localStorage.getItem('pendingUploadId');
-      
-      if (pendingUploadId) {
-        const response = await fetch("http://localhost:4000/api/confirm-payment", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ uploadId: pendingUploadId }),
-        });
-        
-        if (response.ok) {
-          localStorage.removeItem('pendingUploadId');
-          
-          const currentQueueNumber = incrementQueueNumber();
-          const newOrder = {
-            type,
-            time,
-            price,
-            queueNumber: currentQueueNumber,
-          };
-          localStorage.setItem("order", JSON.stringify(newOrder));
-          
-          // แสดง success message
-          setShowPopup(false);
-          setErrorMessage("✅ การชำระเงินสำเร็จ! ข้อมูลของคุณถูกส่งไปยังแอดมินแล้ว");
-          
-          setTimeout(() => {
-            navigate("/");
-          }, 2000);
-        } else {
-          throw new Error('Payment confirmation failed');
-        }
-      } else {
-        const currentQueueNumber = incrementQueueNumber();
-        const newOrder = {
-          type,
-          time,
-          price,
-          queueNumber: currentQueueNumber,
-        };
-        localStorage.setItem("order", JSON.stringify(newOrder));
-        setErrorMessage("✅ การชำระเงินสำเร็จ!");
-        
-        setTimeout(() => {
-          navigate("/");
-        }, 2000);
-      }
-    } catch (error) {
-      console.error("Error confirming payment:", error);
+      const pendingUploadId = localStorage.getItem("pendingUploadId");
+      // ชั่วคราวปิด fetch ยืนยัน เพื่อตรวจ modal
+      // if (pendingUploadId) { ...fetch... }
+
+      console.log("[Payment] simulate success flow");
+      const currentQueueNumber = incrementQueueNumber();
+      localStorage.setItem("order", JSON.stringify({
+        type, time, price, queueNumber: currentQueueNumber
+      }));
+      localStorage.removeItem("pendingUploadId");
+      // เคลียร์ draft หลังจ่ายสำเร็จ
+      localStorage.removeItem("uploadFormDraft");
+      localStorage.removeItem("uploadFormImage");
+
+      setShowPopup(false);
+      setShowSuccessModal(true); // แสดงป๊อปอัพสำเร็จ
+      console.log("[Payment] after setShowSuccessModal ->", true);
+    } catch (err) {
+      console.error("[Payment] Error:", err);
       setErrorMessage("❌ เกิดข้อผิดพลาดในการยืนยันการชำระเงิน");
     } finally {
       setIsProcessing(false);
@@ -251,8 +225,36 @@ function Payment() {
                     <li>อัปโหลดสลิปเพื่อยืนยัน</li>
                   </ol>
                 </div>
-                <SlipUpload price={price} onSuccess={handleConfirmPayment} />
+                <SlipUpload price={price} onSuccess={() => {
+                  console.log("[Payment] SlipUpload onSuccess fired");
+                  handleConfirmPayment();
+                }} />
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Modal */}
+        {showSuccessModal && (
+          <div className="modal-overlay">
+            <div className="modal-content" style={{ maxWidth: 420, textAlign: "center" }}>
+              <h3 style={{ marginBottom: 12 }}>ชำระเงินสำเร็จ</h3>
+              <p style={{ marginBottom: 24 }}>ระบบได้รับข้อมูลแล้ว ขอบคุณค่ะ</p>
+              <button
+                onClick={() => navigate("/")}
+                style={{
+                  background: "#2563eb",
+                  color: "#fff",
+                  padding: "10px 22px",
+                  borderRadius: "8px",
+                  fontWeight: 600,
+                  border: "none",
+                  cursor: "pointer",
+                  width: "100%"
+                }}
+              >
+                ไปหน้าหลัก
+              </button>
             </div>
           </div>
         )}
@@ -262,7 +264,3 @@ function Payment() {
 }
 
 export default Payment;
-
-// หลังชำระเงินสำเร็จ
-localStorage.removeItem("uploadFormDraft");
-localStorage.removeItem("uploadFormImage");

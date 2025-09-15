@@ -179,87 +179,109 @@ function Home() {
             </div>
           </div>
 
-          {status.systemOn ? (
-            <div className="service-cards">
-              <div className="service-card image-service" onClick={() => handleSelect("image")}>
-                <div className="card-header">
-                  <div className="service-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                      <circle cx="8.5" cy="8.5" r="1.5"/>
-                      <path d="M21 15l-5-5L5 21"/>
-                    </svg>
+          <div className="service-cards">
+            {status.systemOn ? (
+              <>
+                {status.imageOn && (
+                  <div className="service-card image-service" onClick={() => handleSelect("image")}>
+                    <div className="card-header">
+                      <div className="service-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                          <circle cx="8.5" cy="8.5" r="1.5"/>
+                          <path d="M21 15l-5-5L5 21"/>
+                        </svg>
+                      </div>
+                      <div className="service-badge">ภาพ + ข้อความ</div>
+                    </div>
+                    <div className="card-content">
+                      <h3>ส่งรูปขึ้นจอ</h3>
+                      <p>อัปโหลดรูปภาพพร้อมข้อความแสดงบนหน้าจอดิจิทัล</p>
+                      <div className="card-features">
+                        <span className="feature">📸 รองรับ JPG, PNG, GIF</span>
+                        <span className="feature">💬 เพิ่มข้อความได้</span>
+                        <span className="feature">🎨 เลือกสีข้อความ</span>
+                      </div>
+                    </div>
+                    <div className="card-footer">
+                      <span className="price-from">เริ่มต้น 1 บาท</span>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                      </svg>
+                    </div>
                   </div>
-                  <div className="service-badge">ภาพ + ข้อความ</div>
-                </div>
-                <div className="card-content">
-                  <h3>ส่งรูปขึ้นจอ</h3>
-                  <p>อัปโหลดรูปภาพพร้อมข้อความแสดงบนหน้าจอดิจิทัล</p>
-                  <div className="card-features">
-                    <span className="feature">📸 รองรับ JPG, PNG, GIF</span>
-                    <span className="feature">💬 เพิ่มข้อความได้</span>
-                    <span className="feature">🎨 เลือกสีข้อความ</span>
+                )}
+                {status.textOn && (
+                  <div className="service-card text-service" onClick={() => handleSelect("text")}>
+                    <div className="card-header">
+                      <div className="service-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                          <polyline points="14,2 14,8 20,8"/>
+                          <line x1="16" y1="13" x2="8" y2="13"/>
+                          <line x1="16" y1="17" x2="8" y2="17"/>
+                          <line x1="10" y1="9" x2="8" y2="9"/>
+                        </svg>
+                      </div>
+                      <div className="service-badge">ข้อความ</div>
+                    </div>
+                    <div className="card-content">
+                      <h3>ส่งข้อความขึ้นจอ</h3>
+                      <p>ส่งข้อความประกาศหรือโฆษณาแสดงบนหน้าจอดิจิทัล</p>
+                      <div className="card-features">
+                        <span className="feature">✏️ ข้อความ 36 ตัวอักษร</span>
+                        <span className="feature">🎨 เลือกสีข้อความ</span>
+                        <span className="feature">⚡ ง่ายและรวดเร็ว</span>
+                      </div>
+                    </div>
+                    <div className="card-footer">
+                      <span className="price-from">เริ่มต้น 1 บาท</span>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                      </svg>
+                    </div>
                   </div>
-                </div>
-                <div className="card-footer">
-                  <span className="price-from">เริ่มต้น 1 บาท</span>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </div>
+                )}
+                {/* ถ้าไม่มีฟังก์ชันเปิดเลย ให้แสดงข้อความแจ้งเตือน */}
+                {!status.imageOn && !status.textOn && (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "180px",
+                      background: "rgba(30,41,59,0.85)",
+                      color: "#fff",
+                      fontSize: "2rem",
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "18px"
+                    }}
+                  >
+                    ขณะนี้ไม่มีฟังก์ชันให้บริการ
+                  </div>
+                )}
+              </>
+            ) : (
+              // ถ้าระบบปิด แสดงข้อความเท่านั้น
+              <div
+                style={{
+                  width: "100%",
+                  height: "180px",
+                  background: "rgba(30,41,59,0.85)",
+                  color: "#fff",
+                  fontSize: "2rem",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "18px"
+                }}
+              >
+                ขณะนี้ระบบปิดให้บริการชั่วคราว
               </div>
-
-              <div className="service-card text-service" onClick={() => handleSelect("text")}>
-                <div className="card-header">
-                  <div className="service-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      <polyline points="14,2 14,8 20,8"/>
-                      <line x1="16" y1="13" x2="8" y2="13"/>
-                      <line x1="16" y1="17" x2="8" y2="17"/>
-                      <line x1="10" y1="9" x2="8" y2="9"/>
-                    </svg>
-                  </div>
-                  <div className="service-badge">ข้อความ</div>
-                </div>
-                <div className="card-content">
-                  <h3>ส่งข้อความขึ้นจอ</h3>
-                  <p>ส่งข้อความประกาศหรือโฆษณาแสดงบนหน้าจอดิจิทัล</p>
-                  <div className="card-features">
-                    <span className="feature">✏️ ข้อความ 36 ตัวอักษร</span>
-                    <span className="feature">🎨 เลือกสีข้อความ</span>
-                    <span className="feature">⚡ ง่ายและรวดเร็ว</span>
-                  </div>
-                </div>
-                <div className="card-footer">
-                  <span className="price-from">เริ่มต้น 1 บาท</span>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div
-              style={{
-                textAlign: "center",
-                marginTop: "64px",
-                fontSize: "2.2rem",
-                color: "#fff",
-                fontWeight: "bold",
-                letterSpacing: "0.5px",
-                background: "rgba(30,41,59,0.08)",
-                borderRadius: "18px",
-                padding: "48px 0",
-                boxShadow: "0 2px 24px rgba(30,41,59,0.10)",
-                maxWidth: "520px",
-                marginLeft: "auto",
-                marginRight: "auto",
-              }}
-            >
-              ขณะนี้ระบบปิดให้บริการชั่วคราว
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="status-section">
             <div className="status-card">

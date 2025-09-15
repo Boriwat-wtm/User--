@@ -187,7 +187,9 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
     file: req.file ? req.file.filename : null,
     filePath: req.file ? req.file.path : null,
     timestamp: new Date(),
-    status: 'pending'
+    status: 'pending',
+    socialType: req.body.socialType,
+    socialName: req.body.socialName,
   };
   
   // เก็บข้อมูลรอชำระเงิน

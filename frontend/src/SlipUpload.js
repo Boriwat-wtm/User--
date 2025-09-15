@@ -10,6 +10,13 @@ function SlipUpload({ price, onSuccess }) {
     setSlipFile(e.target.files[0]);
   };
 
+  const handleVerify = () => {
+    if (!slipFile) return;
+    // จำลอง / หรือหลังตรวจสำเร็จจริง
+    console.log("[SlipUpload] verification success");
+    onSuccess && onSuccess(); // สำคัญ
+  };
+
   const handleUploadSlipAndVerify = async () => {
     if (!slipFile) {
       alert("กรุณาเลือกไฟล์สลิปก่อน");
@@ -27,7 +34,8 @@ function SlipUpload({ price, onSuccess }) {
       });
       if (response.data.success) {
         setPaymentStatus("success");
-        if (onSuccess) onSuccess();
+        console.log("[SlipUpload] verification success, calling onSuccess");
+        onSuccess && onSuccess();
       } else {
         setPaymentStatus("failed");
         alert(response.data.message || "สลิปไม่ถูกต้องหรือจำนวนเงินไม่ตรง");

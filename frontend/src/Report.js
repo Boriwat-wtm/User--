@@ -28,12 +28,11 @@ function Report() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!category) {
       setMessage("โปรดเลือกประเภทปัญหาที่พบ");
       return;
     }
-    
     if (!detail.trim()) {
       setMessage("โปรดระบุรายละเอียดปัญหาที่เกิดขึ้น");
       return;
@@ -43,19 +42,32 @@ function Report() {
     setMessage("");
 
     try {
-      // จำลองการส่งข้อมูล
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // แสดง animation สำเร็จ
+      const res = await fetch("http://localhost:5001/api/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category,
+          detail
+        })
+      });
+
+      if (!res.ok) {
+        const t = await res.text();
+        console.error("Report error:", t);
+        throw new Error("REQUEST_FAILED");
+      }
+
+      const data = await res.json();
+      console.log("Report saved:", data);
+
       setShowSuccessAnimation(true);
       setMessage("🎉 ขอบคุณสำหรับการแจ้งปัญหา! เราจะดำเนินการแก้ไขในเร็วๆ นี้");
       setCategory("");
       setDetail("");
-      
-      // หยุด animation หลัง 3 วินาที
+
       setTimeout(() => setShowSuccessAnimation(false), 3000);
-      
-    } catch (error) {
+    } catch (err) {
+      console.error(err);
       setMessage("⚠️ เกิดปัญหาในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง");
     } finally {
       setIsSubmitting(false);

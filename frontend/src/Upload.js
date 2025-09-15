@@ -189,6 +189,10 @@ function Upload() {
         formData.append("time", time);
         formData.append("price", price);
         formData.append("textColor", textColor);
+        formData.append("text", text);                // เพิ่ม
+        formData.append("socialType", selectedSocial); // เพิ่ม
+        formData.append("socialName", socialName);     // เพิ่ม
+        formData.append("composed", "1");              // บอกว่าเป็นรูปที่ตกแต่งแล้ว
 
         let sender = "Unknown";
         const user = localStorage.getItem("user");
@@ -203,7 +207,7 @@ function Upload() {
         formData.append("sender", sender);
 
         try {
-          const response = await fetch("http://localhost:4000/api/upload", {
+          const response = await fetch("http://localhost:5001/api/upload", {
             method: "POST",
             body: formData,
           });
@@ -221,8 +225,51 @@ function Upload() {
           setAlertMessage("เกิดข้อผิดพลาดในการอัปโหลด กรุณาลองใหม่");
         }
       });
-    } else {
-      // ...กรณี type === "text" ส่งแบบเดิม...
+    } else if (type === "text") {
+      // เตรียมข้อมูลสำหรับส่งข้อความ
+      let sender = "Unknown";
+      const user = localStorage.getItem("user");
+      if (user) {
+        try {
+          const userObj = JSON.parse(user);
+          sender = userObj.name || userObj.username || "Unknown";
+        } catch {
+          sender = "Unknown";
+        }
+      }
+
+      const payload = {
+        type,
+        text,
+        time,
+        price,
+        sender,
+        textColor,
+        socialType: selectedSocial,
+        socialName: socialName
+      };
+
+      try {
+        const response = await fetch("http://localhost:5001/api/upload", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          localStorage.setItem('pendingUploadId', result.uploadId);
+          setShowPreviewModal(false);
+          navigate(`/payment?uploadId=${result.uploadId}&price=${price}&type=${type}&time=${time}`);
+        } else {
+          throw new Error('Failed to upload');
+        }
+      } catch (error) {
+        console.error('Error uploading:', error);
+        setAlertMessage("เกิดข้อผิดพลาดในการอัปโหลด กรุณาลองใหม่");
+      }
     }
   };
 
@@ -669,24 +716,57 @@ function Upload() {
                     </div>
                   )}
                   {type === "text" && (
-                    <div className="text-only-preview">
-                      {/* สำหรับ text-only สามารถแสดง socialOnImage ได้เช่นกัน */}
+                    <div
+                      style={{
+                        background: "linear-gradient(135deg,#233046 60%,#1e293b 100%)",
+                        borderRadius: "18px",
+                        minHeight: "120px",
+                        minWidth: "80%",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        margin: "0 auto",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                        padding: "24px 0"
+                      }}
+                    >
+                      {/* Social อยู่บนข้อความในกล่องเดียวกัน */}
                       {socialOnImage && (
-                        <div className="preview-social-overlay" style={{
-                          margin: "8px 0",
-                          color: "#fff",
-                          padding: "6px 16px",
-                          borderRadius: "8px",
-                          fontWeight: "bold",
-                          fontSize: "16px",
-                          maxWidth: "100%",
-                          wordBreak: "break-all",
-                          background: "rgba(0,0,0,0.5)"
-                        }}>
+                        <div
+                          style={{
+                            marginBottom: "16px",
+                            marginTop: "8px", // ขยับลงมาอีกนิด
+                            color: "#fff",
+                            padding: "6px 18px",
+                            borderRadius: "8px",
+                            fontWeight: "bold",
+                            fontSize: "24px",
+                            maxWidth: "100%",
+                            wordBreak: "break-all",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            boxShadow: "none" // เอาเงาออก
+                            // background: "#666", // ลบ background ออก
+                          }}
+                        >
                           {socialOnImage}
                         </div>
                       )}
-                      <p style={{ color: textColor }}>{text}</p>
+                      <div
+                        style={{
+                          color: textColor,
+                          fontWeight: "bold",
+                          fontSize: "20px", // ปรับขนาดข้อความเป็น 20px
+                          textShadow: textColor === "white"
+                            ? "0 2px 8px rgba(0,0,0,0.8)"
+                            : "0 2px 8px rgba(255,255,255,0.8)",
+                          textAlign: "center",
+                          wordBreak: "break-all"
+                        }}
+                      >
+                        {text}
+                      </div>
                     </div>
                   )}
                   <div className="preview-info">
